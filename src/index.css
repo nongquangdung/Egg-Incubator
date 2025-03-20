@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-blue: #0088cc;
+  --light-blue: #e6f7ff;
+  --light-gray: #f0f2f5;
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: white;
+  color: #333;
+}
+
+.card {
+  @apply bg-white rounded-2xl shadow p-4;
+}
+
+.card-light {
+  @apply bg-[#f0f2f5] rounded-2xl p-4;
+}
+
+.card-highlight {
+  @apply bg-[#fff8e6] rounded-2xl shadow p-4;
+}
+
+.btn-primary {
+  @apply bg-[#0088cc] text-white rounded-full px-6 py-2 font-medium;
+}
+
+.btn-secondary {
+  @apply bg-[#e6f7ff] text-[#0088cc] rounded-full px-6 py-2 font-medium;
+}
+
+.btn-outline {
+  @apply border border-gray-300 text-gray-700 rounded-full px-6 py-2 font-medium;
+}
+
+.nav-tab {
+  @apply flex flex-col items-center justify-center text-xs text-gray-500;
+}
+
+.nav-tab.active {
+  @apply text-[#0088cc];
+}
+
+.status-indicator {
+  @apply inline-block w-2 h-2 rounded-full;
+}
+
+.status-indicator.active {
+  @apply bg-green-500;
+}
+
+.status-indicator.warning {
+  @apply bg-yellow-500;
+}
+
+.status-indicator.error {
+  @apply bg-red-500;
+}
+
+.mobile-container {
+  @apply max-w-md mx-auto bg-white min-h-screen;
+}
+
+.header-bar {
+  @apply flex justify-between items-center p-4;
+}
+
+.bottom-nav {
+  @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-2;
+}
+
+.bottom-nav-item {
+  @apply flex flex-col items-center justify-center text-xs text-gray-500 p-2;
+}
+
+.bottom-nav-item.active {
+  @apply text-[#0088cc];
+}
+
+.section-title {
+  @apply text-xl font-semibold mb-4;
+}
+
+.avatar {
+  @apply w-10 h-10 rounded-full bg-[#0088cc] text-white flex items-center justify-center font-bold;
+}
