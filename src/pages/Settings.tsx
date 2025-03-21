@@ -16,7 +16,8 @@ import {
   Volume2,
   Globe,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useIncubator } from '../contexts/IncubatorContext';

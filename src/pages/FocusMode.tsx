@@ -1,132 +1,138 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Header from '../components/Header';
 import Navbar from '../components/Navbar';
-import Card from '../components/Card';
-import Button from '../components/Button';
-import { Home, User, Bed, Car, Sun, Plus } from 'lucide-react';
+import { Send, Bot, User } from 'lucide-react';
 import { useIncubator } from '../contexts/IncubatorContext';
+
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 const FocusMode: React.FC = () => {
   const { settings } = useIncubator();
-  
-  const [routines, setRoutines] = useState({
-    household: [
-      { 
-        id: 1, 
-        name: settings.language === 'en' ? 'Away' : 'Vắng nhà', 
-        description: settings.language === 'en' ? "When everyone's away" : "Khi mọi người vắng nhà", 
-        icon: <Home /> 
-      },
-      { 
-        id: 2, 
-        name: settings.language === 'en' ? 'Home' : 'Ở nhà', 
-        description: settings.language === 'en' ? 'When someone comes home' : 'Khi có người về nhà', 
-        icon: <Home /> 
-      }
-    ],
-    personal: [
-      { 
-        id: 3, 
-        name: settings.language === 'en' ? 'Bedtime' : 'Giờ đi ngủ', 
-        description: settings.language === 'en' ? '1 starter • 3 actions' : '1 bộ khởi động • 3 hành động', 
-        icon: <Bed /> 
-      },
-      { 
-        id: 4, 
-        name: settings.language === 'en' ? 'Commuting home' : 'Đi về nhà', 
-        description: settings.language === 'en' ? '1 starter • 2 actions' : '1 bộ khởi động • 2 hành động', 
-        icon: <Car /> 
-      },
-      { 
-        id: 5, 
-        name: settings.language === 'en' ? 'Commuting to work' : 'Đi làm', 
-        description: settings.language === 'en' ? '1 starter • 4 actions' : '1 bộ khởi động • 4 hành động', 
-        icon: <Car /> 
-      },
-      { 
-        id: 6, 
-        name: settings.language === 'en' ? 'Good morning' : 'Buổi sáng tốt lành', 
-        description: settings.language === 'en' ? '1 starter • 2 actions' : '1 bộ khởi động • 2 hành động', 
-        icon: <Sun /> 
-      }
-    ]
-  });
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
+
+    const userMessage = { role: 'user', content: input };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer sk-77781c68c7e045328efc322918c91c94`
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            {
+              role: 'system',
+              content: `Bạn là chuyên gia về chăn nuôi gia cầm, gia súc, nông nghiệp và ấp trứng. Hãy trả lời bằng ${settings.language === 'en' ? 'English' : 'Tiếng Việt'}`
+            },
+            ...messages,
+            userMessage
+          ],
+          temperature: 0.7,
+          max_tokens: 1000
+        })
+      });
+
+      const data = await response.json();
+      const assistantMessage = data.choices[0].message;
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error:', error);
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: settings.language === 'en' 
+            ? 'Sorry, something went wrong. Please try again.' 
+            : 'Xin lỗi, đã xảy ra lỗi. Vui lòng thử lại.'
+        }
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="mobile-container pb-20">
-      <Header title={settings.language === 'en' ? 'Automations' : 'Tự động hóa'} />
+      <Header title={settings.language === 'en' ? 'Chat Assistant' : 'Trợ lý Chat'} />
       
-      <div className="p-4">
-        <h2 className="text-lg font-medium mb-3">
-          {settings.language === 'en' ? 'Household Routines' : 'Thói quen hộ gia đình'}
-        </h2>
-        
-        {routines.household.length > 0 ? (
-          <div className="space-y-3 mb-6">
-            {routines.household.map(routine => (
-              <Card key={routine.id} variant="light" className="flex items-center">
-                <div className="mr-3">
-                  {routine.icon}
-                </div>
-                <div>
-                  <h3 className="font-medium">{routine.name}</h3>
-                  <p className="text-sm text-gray-500">{routine.description}</p>
-                </div>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card variant="light" className="mb-6 text-center py-6">
-            <p className="text-gray-500 mb-4">
-              {settings.language === 'en' 
-                ? 'Create a home to add household routines' 
-                : 'Tạo một ngôi nhà để thêm thói quen hộ gia đình'}
-            </p>
-            <Button 
-              variant="secondary" 
-              icon={<Plus className="h-5 w-5" />}
+      <div className="flex flex-col h-[calc(100vh-140px)] p-4">
+        <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+          {messages.map((msg, index) => (
+            <div 
+              key={index}
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              {settings.language === 'en' ? 'Create home' : 'Tạo nhà'}
-            </Button>
-          </Card>
-        )}
-        
-        <h2 className="text-lg font-medium mb-3">
-          {settings.language === 'en' ? 'Personal Routines' : 'Thói quen cá nhân'}
-        </h2>
-        
-        <div className="space-y-3 mb-6">
-          {routines.personal.map(routine => (
-            <Card key={routine.id} variant="light" className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="mr-3">
-                  {routine.icon}
+              <div className={`max-w-[80%] p-3 rounded-lg ${
+                msg.role === 'user'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100'
+              }`}>
+                <div className="flex items-center mb-1">
+                  {msg.role === 'assistant' ? (
+                    <Bot className="h-4 w-4 mr-2" />
+                  ) : (
+                    <User className="h-4 w-4 mr-2" />
+                  )}
+                  <span className="text-sm font-medium">
+                    {msg.role === 'assistant' 
+                      ? settings.language === 'en' ? 'Assistant' : 'Trợ lý'
+                      : 'You'
+                    }
+                  </span>
                 </div>
-                <div>
-                  <h3 className="font-medium">{routine.name}</h3>
-                  <p className="text-sm text-gray-500">{routine.description}</p>
-                </div>
+                <p className="whitespace-pre-wrap">{msg.content}</p>
               </div>
-              <div className="bg-white rounded-full p-2 shadow">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </div>
-            </Card>
+            </div>
           ))}
+          <div ref={chatEndRef} />
         </div>
-        
-        <div className="fixed bottom-20 right-4">
-          <Button 
-            variant="primary" 
-            className="rounded-full w-12 h-12 flex items-center justify-center shadow-lg"
+
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+            placeholder={
+              settings.language === 'en' 
+                ? 'Ask about poultry farming, incubation...' 
+                : 'Hỏi về chăn nuôi gia cầm, ấp trứng...'
+            }
+            className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isLoading}
+          />
+          <button
+            onClick={handleSend}
+            disabled={isLoading}
+            className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400"
           >
-            <Plus className="h-6 w-6" />
-          </Button>
+            <Send className="h-5 w-5" />
+          </button>
         </div>
       </div>
-      
+
       <Navbar />
     </div>
   );
